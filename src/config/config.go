@@ -7,17 +7,19 @@ import (
 )
 
 type Configuration struct {
-	BrokerUri  string
-	ClientName string
-	Port       string
+	BrokerUri     string
+	BrokerPort    string
+	ClientName    string
+	WebsocketPort string
 }
 
 func LoadConfig() Configuration {
 	godotenv.Load()
 	return Configuration{
-		BrokerUri:  GetEnv("BROKER_URI", "localhost"),
-		ClientName: GetEnv("CLIENT_NAME", "Infus Server"),
-		Port:       GetEnv("BROKER_PORT", "1883"),
+		BrokerUri:     GetEnv("BROKER_URI", "localhost"),
+		BrokerPort:    GetEnv("BROKER_PORT", "1883"),
+		ClientName:    GetEnv("CLIENT_NAME", "Infus Server"),
+		WebsocketPort: GetEnv("WEBSOCKET_PORT", "8080"),
 	}
 }
 

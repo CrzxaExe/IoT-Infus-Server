@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 
 	"CrzxaExe/infus-server/src/config"
@@ -10,20 +9,29 @@ import (
 )
 
 func main() {
-	fmt.Println("Starting Server")
+	log.Println("Starting Server")
+	configs := config.LoadConfig()
 
-	client := config.CreateClient()
+	client := config.CreateClient(configs)
 
-	token := client.Subscribe("medical/infusion/#", 1, func(c mqtt.Client, m mqtt.Message) {
+	token := client.Subscribe("medical/infusion/data/#", 1, func(c mqtt.Client, m mqtt.Message) {
 		log.Printf("Infusion | %s, %s", m.Topic(), m.Payload())
 	})
 
 	go func() {
-		_ = token.Wait()
-		if token.Error() != nil {
-			log.Fatal(token.Error())
+		for {
+			if !client.IsConnected() {
+				return
+			}
+
+			_ = token.Wait()
+			if token.Error() != nil {
+				log.Fatal(token.Error())
+			}
 		}
 	}()
+
+	config.ServeWebsocket(configs)
 
 	select {}
 }
