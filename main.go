@@ -1,37 +1,28 @@
 package main
 
 import (
+	"fmt"
 	"log"
+	"net/http"
 
 	"CrzxaExe/infus-server/src/config"
-
-	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"CrzxaExe/infus-server/src/handler"
 )
 
 func main() {
 	log.Println("Starting Server")
 	configs := config.LoadConfig()
 
-	client := config.CreateClient(configs)
+	hub := config.CreateHub()
+	database := config.ConnectDatabase(configs)
+	go hub.Run()
 
-	token := client.Subscribe("medical/infusion/data/#", 1, func(c mqtt.Client, m mqtt.Message) {
-		log.Printf("Infusion | %s, %s", m.Topic(), m.Payload())
+	mqttClient := config.CreateClient(configs, hub, database)
+	mqttClient.Subscribe("medical/infusion/data/#", 1, nil)
+
+	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		handler.ServeWS(hub, mqttClient, database, w, r)
 	})
 
-	go func() {
-		for {
-			if !client.IsConnected() {
-				return
-			}
-
-			_ = token.Wait()
-			if token.Error() != nil {
-				log.Fatal(token.Error())
-			}
-		}
-	}()
-
-	config.ServeWebsocket(configs)
-
-	select {}
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", configs.WebsocketPort), nil))
 }

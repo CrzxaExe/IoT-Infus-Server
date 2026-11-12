@@ -1,38 +1,51 @@
 package config
 
 import (
-	"fmt"
-	"log"
-	"net/http"
+	"sync"
 
 	"github.com/gorilla/websocket"
 )
 
-func ServeWebsocket(configs Configuration) {
-	upgrader := websocket.Upgrader{
-		CheckOrigin: func(r *http.Request) bool { return true },
+type Hub struct {
+	clients   map[*websocket.Conn]bool
+	Broadcast chan []byte
+	mu        sync.Mutex
+}
+
+func CreateHub() *Hub {
+	return &Hub{
+		clients:   make(map[*websocket.Conn]bool),
+		Broadcast: make(chan []byte),
 	}
+}
 
-	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
-		conn, err := upgrader.Upgrade(w, r, nil)
-		if err != nil {
-			log.Println("Failed to upgrade websocket, ", err)
-		}
+func (h *Hub) Run() {
+	for {
+		message := <-h.Broadcast
+		h.mu.Lock()
 
-		defer conn.Close()
-
-		log.Println("New Client connected")
-
-		for {
-			msgType, payload, err := conn.ReadMessage()
+		for client := range h.clients {
+			err := client.WriteMessage(websocket.TextMessage, message)
 			if err != nil {
-				log.Println("Client disconnected")
-				return
+				client.Close()
+				delete(h.clients, client)
 			}
-
-			log.Println(msgType, payload)
 		}
-	})
 
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", configs.WebsocketPort), nil))
+		h.mu.Unlock()
+	}
+}
+
+func (h *Hub) AddClient(conn *websocket.Conn) {
+	h.mu.Lock()
+
+	h.clients[conn] = true
+	h.mu.Unlock()
+}
+
+func (h *Hub) RemoveClient(conn *websocket.Conn) {
+	h.mu.Lock()
+
+	delete(h.clients, conn)
+	h.mu.Unlock()
 }
