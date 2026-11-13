@@ -27,7 +27,7 @@ func CreateClient(configs Configuration, hub *Hub, database *mongo.Client) mqtt.
 		msg := models.WebsocketPayload[models.InfusPayload]{
 			Type:    "data",
 			Message: "test",
-			Data:    data,
+			Result:  data,
 		}
 		_, err := InsertOne(database, "data", data)
 		if err != nil {

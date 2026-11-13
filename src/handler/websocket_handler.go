@@ -2,11 +2,13 @@ package handler
 
 import (
 	"CrzxaExe/infus-server/src/config"
+	"CrzxaExe/infus-server/src/constants"
 	"CrzxaExe/infus-server/src/models"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/gorilla/websocket"
@@ -21,7 +23,7 @@ var upgrader = websocket.Upgrader{
 func ServeWS(hub *config.Hub, mqttClient mqtt.Client, database *mongo.Client, w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Println("Failed to Upgrade:", err)
+		log.Println("Error while upgrading http:", err)
 		return
 	}
 
@@ -51,18 +53,27 @@ func ServeWS(hub *config.Hub, mqttClient mqtt.Client, database *mongo.Client, w 
 			break
 		}
 
-		var msg models.SocketCommand
+		var msg models.SocketCommand[any]
 		if err := json.Unmarshal(payload, &msg); err != nil {
 			log.Println("Failed to parse Webscoket:", err)
 			continue
 		}
 
-		if msg.Type == "command" {
-			topic := fmt.Sprintf("medical/infusion/command/%s", msg.DeviceID)
+		// Add default value
+		msg.Timestamp = time.Now().String()
+		msg.IsSuccess = false
+
+		if msg.Type == "set" {
+			topic := fmt.Sprintf("%s/command/%s", constants.TOPIC, msg.DeviceID)
+
+			result, err := config.InsertOne(database, "command", msg)
+			if err != nil || result.InsertedID == nil {
+				log.Fatal("Failed to save into database:", err)
+				continue
+			}
 
 			mqttClient.Publish(topic, 1, false, payload)
 			log.Printf("WS > %s\n", payload)
 		}
-
 	}
 }

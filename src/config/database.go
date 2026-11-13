@@ -37,9 +37,9 @@ func FetchData[T any](client *mongo.Client, collection string, filter bson.D, op
 		return nil, err
 	}
 
-	var result []T
+	var result []T = []T{}
 	if err = cursor.All(context.TODO(), &result); err != nil {
-		return nil, err
+		return result, err
 	}
 
 	return result, nil

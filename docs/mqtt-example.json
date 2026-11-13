@@ -1,0 +1,12 @@
+{
+  "deviceId": "test-001",
+  "patientId": "pat-001-001",
+  "roomId": "room-001",
+  "data": {
+    "tpm": 30.4,
+    "infusType": "nacl",
+    "percent": 90.5,
+    "servo": 90,
+    "volume": 5000
+  }
+}

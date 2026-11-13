@@ -1,0 +1,10 @@
+{
+  "type": "set",
+  "deviceId": "test-001",
+  "data": {
+    "tpm": 50.4,
+    "patientId": "pat-001-001",
+    "infusType": "nacl",
+    "volume": 5000
+  }
+}

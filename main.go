@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"CrzxaExe/infus-server/src/config"
+	"CrzxaExe/infus-server/src/constants"
 	"CrzxaExe/infus-server/src/handler"
 )
 
@@ -18,7 +19,7 @@ func main() {
 	go hub.Run()
 
 	mqttClient := config.CreateClient(configs, hub, database)
-	mqttClient.Subscribe("medical/infusion/data/#", 1, nil)
+	mqttClient.Subscribe(fmt.Sprintf("%s/data/#", constants.TOPIC), 1, nil)
 
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 		handler.ServeWS(hub, mqttClient, database, w, r)
